@@ -8,18 +8,15 @@ import 'study_create_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // 추가
 import 'package:google_sign_in/google_sign_in.dart'; // 추가
 import '../auth/login_screen.dart'; // 로그인 화면으로 이동하기 위해 필요
+import 'package:cloud_firestore/cloud_firestore.dart'; // [추가] Firestore 임포트
 
 class StudyListScreen extends StatelessWidget {
   const StudyListScreen({super.key});
 
-  // [추가] 로그아웃 함수
+  // 로그아웃 함수 (기존과 동일)
   Future<void> _signOut(BuildContext context) async {
-    // 1. Firebase 로그아웃
     await FirebaseAuth.instance.signOut();
-    // 2. 구글 계정 연결 해제 (이걸 해야 다음에 팝업창이 다시 떠!)
     await GoogleSignIn().signOut();
-
-    // 3. 로그인 화면으로 이동
     if (context.mounted) {
       Navigator.pushReplacement(
         context,
@@ -43,21 +40,38 @@ class StudyListScreen extends StatelessWidget {
         actions: [
           IconButton(onPressed: () {}, icon: const Icon(Icons.search)),
           IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.notifications_none),
-          ),
-          // [추가] 로그아웃 아이콘
-          IconButton(
             onPressed: () => _signOut(context),
             icon: const Icon(Icons.logout),
           ),
         ],
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: 5, // 일단 5개만 보여줄게
-        itemBuilder: (context, index) {
-          return const StudyCard();
+      // [핵심] StreamBuilder로 실시간 데이터 감시 시작!
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('studies')
+            .orderBy('createdAt', descending: true) // 최신순 정렬
+            .snapshots(),
+        builder: (context, snapshot) {
+          // 데이터 로딩 중일 때
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          // 데이터가 하나도 없을 때
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(child: Text('등록된 스터디가 없어요. 첫 글을 써보세요!'));
+          }
+
+          // 데이터가 있을 때 리스트 생성
+          final docs = snapshot.data!.docs;
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: docs.length,
+            itemBuilder: (context, index) {
+              final data = docs[index].data() as Map<String, dynamic>;
+              return StudyCard(data: data); // 데이터를 카드로 전달
+            },
+          );
         },
       ),
       floatingActionButton: FloatingActionButton(
@@ -74,12 +88,16 @@ class StudyListScreen extends StatelessWidget {
   }
 }
 
-// 스터디 하나하나를 보여줄 카드 위젯
+// [수정] 데이터를 받아서 보여주도록 StudyCard 변경
 class StudyCard extends StatelessWidget {
-  const StudyCard({super.key});
+  final Map<String, dynamic> data; // 데이터 받기
+  const StudyCard({super.key, required this.data});
 
   @override
   Widget build(BuildContext context) {
+    // 태그 리스트 가져오기 (없으면 빈 리스트)
+    final List<dynamic> tags = data['tags'] ?? [];
+
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 0,
@@ -88,7 +106,6 @@ class StudyCard extends StatelessWidget {
         side: BorderSide(color: Colors.grey.shade200),
       ),
       color: Colors.white,
-      // 1. 카드의 모양대로 클릭 효과가 잘리도록 설정
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () {
@@ -97,7 +114,6 @@ class StudyCard extends StatelessWidget {
             MaterialPageRoute(builder: (context) => const StudyDetailScreen()),
           );
         },
-        // 2. Card 대신 여기에 Padding 위젯을 사용!
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -105,64 +121,48 @@ class StudyCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.accent.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Text(
-                      '모집중',
-                      style: TextStyle(
-                        color: AppColors.accent,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
+                  _buildStatusBadge(),
                   const Spacer(),
                   const Icon(Icons.bookmark_border, color: AppColors.textHint),
                 ],
               ),
               const SizedBox(height: 12),
-              const Text(
-                '플러터로 포트폴리오 같이 만드실 분!',
-                style: TextStyle(
+              Text(
+                data['title'] ?? '제목 없음', // 진짜 제목
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: AppColors.textMain,
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                '매주 주안역 부근에서 모여서 스터디 진행 예정이고, 12월까지 꾸준히 같이 하실 분 구합니다.',
-                style: TextStyle(color: AppColors.textSub, fontSize: 14),
+              Text(
+                data['content'] ?? '내용 없음', // 진짜 내용
+                style: const TextStyle(color: AppColors.textSub, fontSize: 14),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 16),
               Wrap(
                 spacing: 8,
-                children: [
-                  _buildTag('Flutter'),
-                  _buildTag('Dart'),
-                  _buildTag('Firebase'),
-                ],
+                children: tags
+                    .map((tag) => _buildTag(tag.toString()))
+                    .toList(), // 진짜 태그들
               ),
               const Divider(height: 32),
-              const Row(
+              Row(
                 children: [
-                  CircleAvatar(
+                  const CircleAvatar(
                     radius: 12,
                     backgroundColor: AppColors.primaryLight,
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    '사공민규',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                    data['author'] ?? '익명', // 진짜 작성자 이름
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                   const Spacer(),
                   const Icon(
@@ -179,6 +179,24 @@ class StudyCard extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.accent.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: const Text(
+        '모집중',
+        style: TextStyle(
+          color: AppColors.accent,
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );

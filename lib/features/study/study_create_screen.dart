@@ -1,9 +1,70 @@
-// lib/features/study/study_create_screen.dart
 import 'package:flutter/material.dart';
 import '../../shared/constants/app_colors.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // 1. Firestore 임포트
+import 'package:firebase_auth/firebase_auth.dart'; // 2. Auth 임포트
 
-class StudyCreateScreen extends StatelessWidget {
+// 3. StatefulWidget으로 변경 (입력값 제어를 위해)
+class StudyCreateScreen extends StatefulWidget {
   const StudyCreateScreen({super.key});
+
+  @override
+  State<StudyCreateScreen> createState() => _StudyCreateScreenState();
+}
+
+class _StudyCreateScreenState extends State<StudyCreateScreen> {
+  // 4. 입력창의 글자를 읽어오기 위한 컨트롤러들
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _tagsController = TextEditingController();
+  final TextEditingController _contentController = TextEditingController();
+
+  bool _isLoading = false; // 등록 중일 때 중복 클릭 방지용
+
+  // 5. 데이터를 저장하는 핵심 함수
+  Future<void> _saveStudy() async {
+    final title = _titleController.text.trim();
+    final tagsString = _tagsController.text.trim();
+    final content = _contentController.text.trim();
+    final user = FirebaseAuth.instance.currentUser;
+
+    // 간단한 유효성 검사
+    if (title.isEmpty || content.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('제목과 내용을 입력해주세요!')));
+      return;
+    }
+
+    setState(() => _isLoading = true); // 로딩 시작
+
+    try {
+      // 쉼표로 구분된 태그를 리스트로 만들기 (예: "Flutter, Dart" -> ["Flutter", "Dart"])
+      List<String> tags = tagsString
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+
+      // Firestore에 데이터 추가
+      await FirebaseFirestore.instance.collection('studies').add({
+        'title': title,
+        'tags': tags,
+        'content': content,
+        'author': user?.displayName ?? '익명 개발자',
+        'authorId': user?.uid,
+        'createdAt': FieldValue.serverTimestamp(), // 서버 시간 기준
+      });
+
+      if (mounted) Navigator.pop(context); // 성공하면 리스트 화면으로 가기
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('저장 실패: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false); // 로딩 끝
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +79,7 @@ class StudyCreateScreen extends StatelessWidget {
         foregroundColor: AppColors.primary,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close), // 닫기 버튼
+          icon: const Icon(Icons.close),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -27,63 +88,51 @@ class StudyCreateScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 제목 입력
             const Text('제목', style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             TextField(
+              controller: _titleController, // 컨트롤러 연결
               decoration: InputDecoration(
                 hintText: '스터디 제목을 입력하세요',
-                hintStyle: const TextStyle(color: AppColors.textHint),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                contentPadding: const EdgeInsets.all(16),
               ),
             ),
             const SizedBox(height: 24),
-
-            // 기술 태그 입력 (가이드 텍스트)
             const Text(
               '사용 기술 (쉼표로 구분)',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             TextField(
+              controller: _tagsController, // 컨트롤러 연결
               decoration: InputDecoration(
                 hintText: '예: Flutter, Dart, Firebase',
-                hintStyle: const TextStyle(color: AppColors.textHint),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                contentPadding: const EdgeInsets.all(16),
               ),
             ),
             const SizedBox(height: 24),
-
-            // 내용 입력
             const Text('스터디 소개', style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             TextField(
-              maxLines: 10, // 여러 줄 입력 가능하게 설정
+              controller: _contentController, // 컨트롤러 연결
+              maxLines: 10,
               decoration: InputDecoration(
-                hintText: '스터디 목적, 시간, 장소 등을 자세히 적어주세요',
-                hintStyle: const TextStyle(color: AppColors.textHint),
+                hintText: '내용을 자세히 적어주세요',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                contentPadding: const EdgeInsets.all(16),
               ),
             ),
             const SizedBox(height: 40),
-
-            // 완료 버튼
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  // TODO: 실제로 데이터를 저장하는 로직
-                  Navigator.pop(context); // 일단은 작성 완료 후 이전 화면으로 이동
-                },
+                // 6. 로딩 중이면 버튼 비활성화, 아니면 _saveStudy 실행
+                onPressed: _isLoading ? null : _saveStudy,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
@@ -91,14 +140,18 @@ class StudyCreateScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  '등록하기',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                child: _isLoading
+                    ? const CircularProgressIndicator(
+                        color: Colors.white,
+                      ) // 로딩 중일 때 표시
+                    : const Text(
+                        '등록하기',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
               ),
             ),
           ],
