@@ -1,6 +1,7 @@
 // lib/features/auth/login_screen.dart
 import 'package:flutter/material.dart';
 import '../../shared/constants/app_colors.dart';
+import '../study/study_list_screen.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -45,8 +46,13 @@ class LoginScreen extends StatelessWidget {
               // 구글 로그인 버튼 (커스텀)
               ElevatedButton.icon(
                 onPressed: () {
-                  // TODO: 나중에 Firebase 연동할 때 기능을 넣을 거야!
-                  print('구글 로그인 시도');
+                  // 버튼을 누르면 StudyListScreen으로 이동!
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const StudyListScreen(),
+                    ),
+                  );
                 },
                 icon: const Icon(Icons.login_rounded, color: Colors.white),
                 label: const Text(
