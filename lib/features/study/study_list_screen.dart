@@ -68,8 +68,12 @@ class StudyListScreen extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             itemCount: docs.length,
             itemBuilder: (context, index) {
-              final data = docs[index].data() as Map<String, dynamic>;
-              return StudyCard(data: data); // 데이터를 카드로 전달
+              final doc = docs[index]; // 문서 전체 가져오기
+              final data = doc.data() as Map<String, dynamic>;
+              return StudyCard(
+                data: data,
+                docId: doc.id, // [추가] 여기서 문서의 고유 ID도 함께 넘겨준다!
+              );
             },
           );
         },
@@ -91,7 +95,9 @@ class StudyListScreen extends StatelessWidget {
 // [수정] 데이터를 받아서 보여주도록 StudyCard 변경
 class StudyCard extends StatelessWidget {
   final Map<String, dynamic> data; // 데이터 받기
-  const StudyCard({super.key, required this.data});
+  final String docId; // 문서 ID도 받아야 삭제할 때 사용 가능
+
+  const StudyCard({super.key, required this.data, required this.docId});
 
   @override
   Widget build(BuildContext context) {
@@ -113,7 +119,7 @@ class StudyCard extends StatelessWidget {
             context,
             MaterialPageRoute(
               // [수정] 이동할 때 data를 함께 넘겨준다!
-              builder: (context) => StudyDetailScreen(data: data),
+              builder: (context) => StudyDetailScreen(data: data, docId: docId),
             ),
           );
         },
