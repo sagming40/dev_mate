@@ -5,9 +5,28 @@ import '../../shared/constants/app_colors.dart';
 import 'study_detail_screen.dart';
 // 상단에 import 추가
 import 'study_create_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // 추가
+import 'package:google_sign_in/google_sign_in.dart'; // 추가
+import '../auth/login_screen.dart'; // 로그인 화면으로 이동하기 위해 필요
 
 class StudyListScreen extends StatelessWidget {
   const StudyListScreen({super.key});
+
+  // [추가] 로그아웃 함수
+  Future<void> _signOut(BuildContext context) async {
+    // 1. Firebase 로그아웃
+    await FirebaseAuth.instance.signOut();
+    // 2. 구글 계정 연결 해제 (이걸 해야 다음에 팝업창이 다시 떠!)
+    await GoogleSignIn().signOut();
+
+    // 3. 로그인 화면으로 이동
+    if (context.mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,6 +45,11 @@ class StudyListScreen extends StatelessWidget {
           IconButton(
             onPressed: () {},
             icon: const Icon(Icons.notifications_none),
+          ),
+          // [추가] 로그아웃 아이콘
+          IconButton(
+            onPressed: () => _signOut(context),
+            icon: const Icon(Icons.logout),
           ),
         ],
       ),

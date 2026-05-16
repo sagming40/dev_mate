@@ -1,8 +1,13 @@
 // lib/main.dart
+import 'package:firebase_core/firebase_core.dart'; // 1. 필수!
+import 'firebase_options.dart'; // 2. flutterfire가 만들어준 설정 파일
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart'; // 추가
-import 'firebase_options.dart'; // 추가된 파일 임포트
-import 'features/auth/login_screen.dart'; // 방금 만든 파일 임포트
+import 'features/auth/login_screen.dart';
+
+// import 'package:flutter/material.dart';
+// import 'package:firebase_core/firebase_core.dart'; // 추가
+// import 'firebase_options.dart'; // 추가된 파일 임포트
+// import 'features/auth/login_screen.dart'; // 방금 만든 파일 임포트
 
 void main() async {
   // 1. Flutter 엔진이 초기화될 때까지 기다림

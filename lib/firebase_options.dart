@@ -64,6 +64,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '1097998256478',
     projectId: 'dev-mate-ce028',
     storageBucket: 'dev-mate-ce028.firebasestorage.app',
+    androidClientId: '1097998256478-rl42p1kbmggoiq4f16dcslo1gma1pktc.apps.googleusercontent.com',
+    iosClientId: '1097998256478-2kklfv1416d2sfvifeltgo1a1tc2tb3b.apps.googleusercontent.com',
     iosBundleId: 'com.example.devMate',
   );
 
@@ -73,6 +75,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '1097998256478',
     projectId: 'dev-mate-ce028',
     storageBucket: 'dev-mate-ce028.firebasestorage.app',
+    androidClientId: '1097998256478-rl42p1kbmggoiq4f16dcslo1gma1pktc.apps.googleusercontent.com',
+    iosClientId: '1097998256478-2kklfv1416d2sfvifeltgo1a1tc2tb3b.apps.googleusercontent.com',
     iosBundleId: 'com.example.devMate',
   );
 
@@ -85,4 +89,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'dev-mate-ce028.firebasestorage.app',
     measurementId: 'G-YQ91VNFCM1',
   );
+
 }
