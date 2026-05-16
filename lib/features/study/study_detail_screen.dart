@@ -1,6 +1,8 @@
 // lib/features/study/study_detail_screen.dart
 import 'package:flutter/material.dart';
 import '../../shared/constants/app_colors.dart';
+// 상단에 import 추가
+import '../chat/chat_room_screen.dart';
 
 class StudyDetailScreen extends StatelessWidget {
   const StudyDetailScreen({super.key});
@@ -146,7 +148,11 @@ class StudyDetailScreen extends StatelessWidget {
         ),
         child: ElevatedButton(
           onPressed: () {
-            // TODO: 채팅방으로 연결
+            // 문의하기 버튼 누르면 채팅방으로 이동!
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ChatRoomScreen()),
+            );
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primary,
