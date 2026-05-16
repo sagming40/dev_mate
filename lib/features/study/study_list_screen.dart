@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../shared/constants/app_colors.dart';
 // 상단에 import 추가
 import 'study_detail_screen.dart';
+// 상단에 import 추가
+import 'study_create_screen.dart';
 
 class StudyListScreen extends StatelessWidget {
   const StudyListScreen({super.key});
@@ -35,7 +37,12 @@ class StudyListScreen extends StatelessWidget {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const StudyCreateScreen()),
+          );
+        },
         backgroundColor: AppColors.accent,
         child: const Icon(Icons.add, color: Colors.white),
       ),
