@@ -124,6 +124,15 @@ class _ChatBubble extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: Column(
+        /* 
+         < crossAxisAlignment: isMe 
+           ? CrossAxisAlignment.end
+           : CrossAxisAlignment.start >
+        삼항 연산자 (A ? B : C): "나(isMe)라면 파란색(B)을 쓰고, 
+        아니면 회색(C)을 써라"라는 뜻
+        이 코드 한 줄 덕분에 카카오톡처럼 내 메시지는 오른쪽, 
+        상대방 메시지는 왼쪽에 정렬됨.
+        */
         crossAxisAlignment: isMe
             ? CrossAxisAlignment.end
             : CrossAxisAlignment.start,

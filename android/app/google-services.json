@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1097998256478",
+    "project_id": "dev-mate-ce028",
+    "storage_bucket": "dev-mate-ce028.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1097998256478:android:7fe307fc4258ab47c5e7cf",
+        "android_client_info": {
+          "package_name": "com.example.dev_mate"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBmiSCJGPxBcAxEwMIcktHMvyw_ri3pJcI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

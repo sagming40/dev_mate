@@ -1,8 +1,16 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart'; // 추가
+import 'firebase_options.dart'; // 추가된 파일 임포트
 import 'features/auth/login_screen.dart'; // 방금 만든 파일 임포트
 
-void main() {
+void main() async {
+  // 1. Flutter 엔진이 초기화될 때까지 기다림
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 2. Firebase 초기화
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   runApp(const MyApp());
 }
 
