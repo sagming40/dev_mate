@@ -111,7 +111,10 @@ class StudyCard extends StatelessWidget {
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const StudyDetailScreen()),
+            MaterialPageRoute(
+              // [수정] 이동할 때 data를 함께 넘겨준다!
+              builder: (context) => StudyDetailScreen(data: data),
+            ),
           );
         },
         child: Padding(
