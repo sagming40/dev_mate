@@ -4,6 +4,7 @@ import '../../shared/constants/app_colors.dart';
 // 상단에 import 추가
 import '../chat/chat_room_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // [추가] Firestore 기능을 위해 필요함!
+import 'package:firebase_auth/firebase_auth.dart'; // [추가] 내 아이디를 알기 위해 필요!
 
 class StudyDetailScreen extends StatelessWidget {
   final Map<String, dynamic> data;
@@ -11,6 +12,7 @@ class StudyDetailScreen extends StatelessWidget {
 
   const StudyDetailScreen({super.key, required this.data, required this.docId});
 
+  // 삭제 로직 (기존과 동일)
   Future<void> _deleteStudy(BuildContext context) async {
     bool? confirm = await showDialog<bool>(
       context: context,
@@ -56,6 +58,10 @@ class StudyDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final List<dynamic> tags = data['tags'] ?? [];
 
+    // [추가] 내가 이 글의 주인인지 확인하는 로직
+    final currentUser = FirebaseAuth.instance.currentUser;
+    final bool isAuthor = currentUser?.uid == data['authorId'];
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -64,10 +70,12 @@ class StudyDetailScreen extends StatelessWidget {
         foregroundColor: AppColors.primary,
         elevation: 0,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.red),
-            onPressed: () => _deleteStudy(context),
-          ),
+          // 내가 쓴 글일 때만 삭제 버튼 보여주기 (선택 사항)
+          if (isAuthor)
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.red),
+              onPressed: () => _deleteStudy(context),
+            ),
         ],
       ),
       body: SingleChildScrollView(
@@ -75,7 +83,6 @@ class StudyDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // [수정 포인트] 이미지가 있을 때만 상단에 표시
             if (data['imageUrl'] != null) ...[
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
@@ -87,7 +94,6 @@ class StudyDetailScreen extends StatelessWidget {
               ),
               const SizedBox(height: 20),
             ],
-
             Text(
               data['title'] ?? '제목 없음',
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
@@ -121,7 +127,47 @@ class StudyDetailScreen extends StatelessWidget {
               spacing: 8,
               children: tags.map((tag) => _buildTag(tag.toString())).toList(),
             ),
+            const SizedBox(height: 100), // 버튼에 가려지지 않게 여유 공간 추가
           ],
+        ),
+      ),
+
+      // [핵심 추가] 화면 아래쪽에 항상 고정되는 버튼 영역
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(top: BorderSide(color: Color(0xFFEEEEEE))),
+        ),
+        child: ElevatedButton(
+          onPressed: () {
+            if (isAuthor) {
+              // 내가 쓴 글이면 수정 페이지로 보내거나 알림 띄우기
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('내가 올린 모집글입니다.')));
+            } else {
+              // 남이 쓴 글이면 채팅방으로 이동!
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('채팅방으로 이동합니다 (구현 중)')),
+              );
+            }
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: isAuthor ? Colors.grey : AppColors.primary,
+            minimumSize: const Size(double.infinity, 56),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+          child: Text(
+            isAuthor ? '내 공고 관리하기' : '스터디 참여하기 (채팅)',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
       ),
     );
