@@ -12,6 +12,60 @@ class StudyDetailScreen extends StatelessWidget {
 
   const StudyDetailScreen({super.key, required this.data, required this.docId});
 
+  // [추가] 스터디 참여(채팅 시작) 로직
+  Future<void> _joinStudy(BuildContext context) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
+
+    final String authorId = data['authorId']; // 글쓴이 ID
+    final String studyId = docId; // 스터디 문서 ID
+    final String myId = currentUser.uid; // 내 ID
+
+    try {
+      // 1. 이미 존재하는 채팅방이 있는지 확인 (나와 글쓴이가 포함된 이 스터디의 방)
+      final existingRooms = await FirebaseFirestore.instance
+          .collection('chat_rooms')
+          .where('studyId', isEqualTo: studyId)
+          .where('users', arrayContains: myId)
+          .get();
+
+      String roomId;
+
+      // 2. 방이 이미 있다면 그 방 ID를 사용
+      if (existingRooms.docs.isNotEmpty) {
+        roomId = existingRooms.docs.first.id;
+      }
+      // 3. 방이 없다면 새로 생성
+      else {
+        final newRoom = await FirebaseFirestore.instance
+            .collection('chat_rooms')
+            .add({
+              'studyId': studyId,
+              'studyTitle': data['title'],
+              'users': [myId, authorId], // 참여자 목록 (나와 글쓴이)
+              'lastMessage': '채팅방이 생성되었습니다.',
+              'lastTime': FieldValue.serverTimestamp(),
+            });
+        roomId = newRoom.id;
+      }
+
+      // 4. 채팅방 화면으로 이동 (roomId를 들고 가기!)
+      if (context.mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatRoomScreen(
+              roomId: roomId,
+              chatTitle: data['title'] ?? '스터디 채팅',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      print('채팅방 생성 오류: $e');
+    }
+  }
+
   // 삭제 로직 (기존과 동일)
   Future<void> _deleteStudy(BuildContext context) async {
     bool? confirm = await showDialog<bool>(
@@ -147,10 +201,8 @@ class StudyDetailScreen extends StatelessWidget {
                 context,
               ).showSnackBar(const SnackBar(content: Text('내가 올린 모집글입니다.')));
             } else {
-              // 남이 쓴 글이면 채팅방으로 이동!
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('채팅방으로 이동합니다 (구현 중)')),
-              );
+              // [수정 포인트] 이제 "구현 중" 스낵바 대신 진짜 함수를 호출!
+              _joinStudy(context);
             }
           },
           style: ElevatedButton.styleFrom(

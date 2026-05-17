@@ -1,24 +1,76 @@
 // lib/features/chat/chat_room_screen.dart
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../shared/constants/app_colors.dart';
 
-class ChatRoomScreen extends StatelessWidget {
-  const ChatRoomScreen({super.key});
+// 1. 기능을 위해 StatefulWidget으로 변경!
+class ChatRoomScreen extends StatefulWidget {
+  final String roomId;
+  final String chatTitle;
+
+  const ChatRoomScreen({
+    super.key,
+    required this.roomId,
+    required this.chatTitle,
+  });
+
+  @override
+  State<ChatRoomScreen> createState() => _ChatRoomScreenState();
+}
+
+class _ChatRoomScreenState extends State<ChatRoomScreen> {
+  // 2. 메시지 입력을 위한 컨트롤러 추가
+  final TextEditingController _messageController = TextEditingController();
+
+  // 3. 진짜 메시지 전송 함수 (내 코드를 민규의 버튼에 연결할 거야)
+  void _sendMessage() async {
+    final text = _messageController.text.trim();
+    if (text.isEmpty) return;
+
+    final user = FirebaseAuth.instance.currentUser;
+    _messageController.clear(); // 전송 즉시 입력창 비우기
+
+    try {
+      // Firebase의 해당 채팅방 'messages' 폴더에 저장
+      await FirebaseFirestore.instance
+          .collection('chat_rooms')
+          .doc(widget.roomId)
+          .collection('messages')
+          .add({
+            'text': text,
+            'senderId': user?.uid,
+            'senderName': user?.displayName ?? '익명',
+            'timestamp': FieldValue.serverTimestamp(),
+          });
+
+      // 채팅방 목록에서 보여줄 '마지막 메시지' 업데이트
+      await FirebaseFirestore.instance
+          .collection('chat_rooms')
+          .doc(widget.roomId)
+          .update({
+            'lastMessage': text,
+            'lastTime': FieldValue.serverTimestamp(),
+          });
+    } catch (e) {
+      print('메시지 전송 에러: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '플러터 포트폴리오 스터디',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              widget.chatTitle, // 전달받은 스터디 제목 사용
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
-            Text(
-              '사공민규 님외 2명',
+            const Text(
+              '실시간 채팅 대화', // 하단 자막은 심플하게 변경
               style: TextStyle(fontSize: 12, color: AppColors.textSub),
             ),
           ],
@@ -29,31 +81,27 @@ class ChatRoomScreen extends StatelessWidget {
       ),
       body: Column(
         children: [
-          // 1. 메시지 리스트 영역
+          // 4. 메시지 리스트 영역 (나중에 여기에 StreamBuilder를 넣어서 실시간으로 바꿀 거야!)
           Expanded(
             child: ListView(
               padding: const EdgeInsets.all(20),
               children: const [
+                // 일단은 민규가 만든 예시 말풍선들 유지
                 _ChatBubble(
-                  message: '안녕하세요! 스터디 참여하고 싶어서 문의드려요.',
+                  message: '반가워요! 스터디 참여하고 싶습니다.',
                   isMe: false,
                   time: '오후 2:00',
                 ),
                 _ChatBubble(
-                  message: '반가워요 민규님! 어떤 프로젝트 생각 중이신가요?',
+                  message: '네 반갑습니다! 곧 기능을 완성해볼게요.',
                   isMe: true,
                   time: '오후 2:05',
-                ),
-                _ChatBubble(
-                  message: '저는 지금 Firebase 연동 채팅 기능을 구현해보려고 합니다.',
-                  isMe: false,
-                  time: '오후 2:07',
                 ),
               ],
             ),
           ),
 
-          // 2. 하단 입력창 영역
+          // 5. 하단 입력창 영역 (컨트롤러와 전송 함수 연결)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
@@ -70,6 +118,7 @@ class ChatRoomScreen extends StatelessWidget {
                 children: [
                   Expanded(
                     child: TextField(
+                      controller: _messageController, // 컨트롤러 연결!
                       decoration: InputDecoration(
                         hintText: '메시지를 입력하세요...',
                         border: OutlineInputBorder(
@@ -83,6 +132,7 @@ class ChatRoomScreen extends StatelessWidget {
                           vertical: 8,
                         ),
                       ),
+                      onSubmitted: (_) => _sendMessage(), // 엔터 쳐도 전송되게!
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -94,7 +144,7 @@ class ChatRoomScreen extends StatelessWidget {
                         color: Colors.white,
                         size: 20,
                       ),
-                      onPressed: () {},
+                      onPressed: _sendMessage, // 버튼 클릭 시 전송 함수 호출!
                     ),
                   ),
                 ],
@@ -107,7 +157,7 @@ class ChatRoomScreen extends StatelessWidget {
   }
 }
 
-// 말풍선 위젯
+// 말풍선 위젯 (민규가 만든 예쁜 위젯 그대로 유지!)
 class _ChatBubble extends StatelessWidget {
   final String message;
   final bool isMe;
@@ -124,15 +174,6 @@ class _ChatBubble extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: Column(
-        /* 
-         < crossAxisAlignment: isMe 
-           ? CrossAxisAlignment.end
-           : CrossAxisAlignment.start >
-        삼항 연산자 (A ? B : C): "나(isMe)라면 파란색(B)을 쓰고, 
-        아니면 회색(C)을 써라"라는 뜻
-        이 코드 한 줄 덕분에 카카오톡처럼 내 메시지는 오른쪽, 
-        상대방 메시지는 왼쪽에 정렬됨.
-        */
         crossAxisAlignment: isMe
             ? CrossAxisAlignment.end
             : CrossAxisAlignment.start,
