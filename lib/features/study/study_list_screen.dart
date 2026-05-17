@@ -136,6 +136,21 @@ class StudyCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
+
+              // StudyCard 위젯 내부의 build 함수 수정
+              // 제목(Text) 위에 이 코드를 넣어주면 예뻐!
+              if (data['imageUrl'] != null)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    data['imageUrl'],
+                    height: 150,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              const SizedBox(height: 12),
+
               Text(
                 data['title'] ?? '제목 없음', // 진짜 제목
                 style: const TextStyle(

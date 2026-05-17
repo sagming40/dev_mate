@@ -11,9 +11,7 @@ class StudyDetailScreen extends StatelessWidget {
 
   const StudyDetailScreen({super.key, required this.data, required this.docId});
 
-  // [추가] 삭제를 수행하는 핵심 함수
   Future<void> _deleteStudy(BuildContext context) async {
-    // 1. 실수 방지를 위한 확인 창 띄우기
     bool? confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -21,28 +19,25 @@ class StudyDetailScreen extends StatelessWidget {
         content: const Text('정말로 이 게시글을 삭제하시겠습니까?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false), // 취소
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('취소'),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, true), // 삭제 확인
+            onPressed: () => Navigator.pop(context, true),
             child: const Text('삭제', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
     );
 
-    // 2. 사용자가 '삭제'를 눌렀을 때만 진행
     if (confirm == true) {
       try {
-        // Firestore에서 해당 ID의 문서 삭제
         await FirebaseFirestore.instance
             .collection('studies')
             .doc(docId)
             .delete();
-
         if (context.mounted) {
-          Navigator.pop(context); // 삭제 후 리스트 화면으로 돌아가기
+          Navigator.pop(context);
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(const SnackBar(content: Text('게시글이 삭제되었습니다.')));
@@ -68,11 +63,10 @@ class StudyDetailScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         foregroundColor: AppColors.primary,
         elevation: 0,
-        // [추가] 우측 상단에 삭제 버튼 배치
         actions: [
           IconButton(
             icon: const Icon(Icons.delete_outline, color: Colors.red),
-            onPressed: () => _deleteStudy(context), // 삭제 함수 실행
+            onPressed: () => _deleteStudy(context),
           ),
         ],
       ),
@@ -81,6 +75,19 @@ class StudyDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // [수정 포인트] 이미지가 있을 때만 상단에 표시
+            if (data['imageUrl'] != null) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.network(
+                  data['imageUrl'],
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+
             Text(
               data['title'] ?? '제목 없음',
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
