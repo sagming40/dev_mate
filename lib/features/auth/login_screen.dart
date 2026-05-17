@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../shared/constants/app_colors.dart';
-import '../study/study_list_screen.dart';
+// import '../study/study_list_screen.dart'; // ❌ 이 줄을 지우고
+import '../main_screen.dart'; // ⭕ 이렇게 바꿔줘! (main_screen 파일 위치에 따라 경로가 다를 수 있어)
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -31,7 +32,10 @@ class LoginScreen extends StatelessWidget {
       if (context.mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const StudyListScreen()),
+          MaterialPageRoute(
+            builder: (context) =>
+                const MainScreen(), // StudyListScreen() -> MainScreen()으로 변경
+          ),
         );
       }
     } catch (e) {
