@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../shared/constants/app_colors.dart';
 import 'study/study_list_screen.dart'; // 스터디 목록 화면
-import 'chat/chat_list_screen.dart'; // 방금 만든 채팅 목록 화면
+import 'chat/chat_list_screen.dart'; // 채팅 목록 화면
+import 'profile/my_page_screen.dart'; // [추가 1] 방금 만든 마이페이지 임포트! (경로 주의)
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -14,11 +15,18 @@ class _MainScreenState extends State<MainScreen> {
   // 현재 선택된 탭의 인덱스 (0: 홈, 1: 채팅)
   int _selectedIndex = 0;
 
-  // 탭바에 연결할 화면들 리스트
+  // [추가 2] 화면 리스트에 마이페이지 추가!
   final List<Widget> _screens = [
-    const StudyListScreen(), // 0번 탭: 스터디 목록 (기존 메인 화면)
-    const ChatListScreen(), // 1번 탭: 채팅 목록
+    const StudyListScreen(), // 0번 탭: 홈
+    const ChatListScreen(), // 1번 탭: 채팅
+    const MyPageScreen(), // 2번 탭: 내 정보
   ];
+
+  // // 탭바에 연결할 화면들 리스트
+  // final List<Widget> _screens = [
+  //   const StudyListScreen(), // 0번 탭: 스터디 목록 (기존 메인 화면)
+  //   const ChatListScreen(), // 1번 탭: 채팅 목록
+  // ];
 
   // 탭을 눌렀을 때 실행되는 함수
   void _onItemTapped(int index) {
@@ -40,8 +48,10 @@ class _MainScreenState extends State<MainScreen> {
         selectedItemColor: AppColors.primary, // 선택된 아이콘은 파란색
         unselectedItemColor: Colors.grey, // 안 선택된 건 회색
         items: const [
+          // [추가 3] 아이콘 리스트에 '내 정보' 버튼 추가!
           BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),
           BottomNavigationBarItem(icon: Icon(Icons.chat_bubble), label: '채팅'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: '내 정보'),
         ],
       ),
     );
