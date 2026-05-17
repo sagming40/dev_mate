@@ -81,25 +81,93 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       ),
       body: Column(
         children: [
-          // 4. 메시지 리스트 영역 (나중에 여기에 StreamBuilder를 넣어서 실시간으로 바꿀 거야!)
+          // [핵심 수정] 가짜 ListView를 지우고 StreamBuilder로 교체!
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(20),
-              children: const [
-                // 일단은 민규가 만든 예시 말풍선들 유지
-                _ChatBubble(
-                  message: '반가워요! 스터디 참여하고 싶습니다.',
-                  isMe: false,
-                  time: '오후 2:00',
-                ),
-                _ChatBubble(
-                  message: '네 반갑습니다! 곧 기능을 완성해볼게요.',
-                  isMe: true,
-                  time: '오후 2:05',
-                ),
-              ],
+            child: StreamBuilder<QuerySnapshot>(
+              // 1. 어디를 감시할 것인가? -> 이 방(roomId)의 messages 폴더를 시간순(timestamp)으로!
+              stream: FirebaseFirestore.instance
+                  .collection('chat_rooms')
+                  .doc(widget.roomId)
+                  .collection('messages')
+                  .orderBy('timestamp', descending: false) // 오래된 게 위, 최신이 아래
+                  .snapshots(),
+
+              builder: (context, snapshot) {
+                // 데이터 로딩 중일 때 빙글빙글 돌기
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                // 메시지가 하나도 없을 때
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      '첫 메시지를 보내 스터디를 시작해보세요!',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  );
+                }
+
+                final messages = snapshot.data!.docs;
+                final currentUser = FirebaseAuth.instance.currentUser;
+
+                // 2. 데이터가 있으면 ListView.builder로 화면에 그리기
+                return ListView.builder(
+                  padding: const EdgeInsets.all(20),
+                  itemCount: messages.length,
+                  itemBuilder: (context, index) {
+                    final msg = messages[index].data() as Map<String, dynamic>;
+
+                    // 내가 보낸 메시지인지 확인 (isMe)
+                    final bool isMe = msg['senderId'] == currentUser?.uid;
+
+                    // 시간 포맷팅 (예: 오전 10:05)
+                    String timeString = '';
+                    if (msg['timestamp'] != null) {
+                      final DateTime date = (msg['timestamp'] as Timestamp)
+                          .toDate();
+                      final String amPm = date.hour >= 12 ? '오후' : '오전';
+                      final int hour = date.hour > 12
+                          ? date.hour - 12
+                          : (date.hour == 0 ? 12 : date.hour);
+                      final String minute = date.minute.toString().padLeft(
+                        2,
+                        '0',
+                      );
+                      timeString = '$amPm $hour:$minute';
+                    }
+
+                    // 3. 민규가 만든 예쁜 _ChatBubble 위젯에 진짜 데이터 넣기!
+                    return _ChatBubble(
+                      message: msg['text'] ?? '',
+                      isMe: isMe,
+                      time: timeString,
+                    );
+                  },
+                );
+              },
             ),
           ),
+
+          // // 4. 메시지 리스트 영역 (나중에 여기에 StreamBuilder를 넣어서 실시간으로 바꿀 거야!)
+          // Expanded(
+          //   child: ListView(
+          //     padding: const EdgeInsets.all(20),
+          //     children: const [
+          //       // 일단은 민규가 만든 예시 말풍선들 유지
+          //       _ChatBubble(
+          //         message: '반가워요! 스터디 참여하고 싶습니다.',
+          //         isMe: false,
+          //         time: '오후 2:00',
+          //       ),
+          //       _ChatBubble(
+          //         message: '네 반갑습니다! 곧 기능을 완성해볼게요.',
+          //         isMe: true,
+          //         time: '오후 2:05',
+          //       ),
+          //     ],
+          //   ),
+          // ),
 
           // 5. 하단 입력창 영역 (컨트롤러와 전송 함수 연결)
           Container(
